@@ -8,9 +8,6 @@ class Position:
         letters = [chr(i) for i in range(MAT_SIZE)]
         digit_list = [i for i in range(MAT_SIZE)]
 
-
-
-
     @staticmethod
     def readfile(choice):
         with open('SetGame.txt') as openened_file:
