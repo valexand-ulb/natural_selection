@@ -5,8 +5,15 @@ class Position:
     def __init__(self, choice):
         self.list = []
         read = self.readfile(choice)
-        letters = [chr(i) for i in range(MAT_SIZE)]
-        digit_list = [i for i in range(MAT_SIZE)]
+        letters = [chr(97 + i) for i in range(MAT_SIZE)]
+
+        for elem in read:
+            letter = elem[0]
+            digit = int(elem[1:])
+            if letter in letters and 1<= digit <= MAT_SIZE:
+                x = letters.index(letter)
+                y = digit-1
+                self.list.append((x, y))
 
     @staticmethod
     def readfile(choice):
@@ -39,9 +46,9 @@ class Position:
 
 class PositionFood(Position):
     def __init__(self):
-        super().__init__(2)
-
+        super().__init__(1)
         score = MAX_FOOD - len(self.list)
+
         if score > 0:
             for i in range(score):
                 finni = False
@@ -59,8 +66,8 @@ class PositionFood(Position):
 class PositionMob(Position):
     def __init__(self):
         super().__init__(0)
-
         score = MAX_MOB - len(self.list)
+
         if score > 0:
             for i in range(score):
                 finni = False
@@ -77,7 +84,8 @@ class PositionMob(Position):
 
 class PositionObstacle(Position):
     def __init__(self):
-        super().__init__(1)
+        super().__init__(2)
+
 
     def getList(self):
         return self.list
