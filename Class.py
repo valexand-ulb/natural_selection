@@ -3,14 +3,18 @@ from os import name as os_name
 from os import system as os_system
 from time import sleep
 
+
 class Game:
+    "test"
     def __init__(self):
         self.play = Plateau()
-        for mob in self.play.mob_list:
-            for i in range(3):
-                mob.move(self.play.plateau)
+        for i in range(40):
+            for mob in self.play.mob_list:
+                if mob.getCoord() is not None:
+                    mob.move(self.play.plateau)
                 self.play.showMat()
-                sleep(2)
+            sleep(1.5)
+
 
 
 class Plateau:
@@ -65,12 +69,11 @@ class Mob:
     def getCoord(self):
         return self.coord
 
-
-    def remCoord(self):
-        self.coord = None
-
-    def getEnergy(self):
+    def getMobEnergy(self):
         return self.energy
+
+    def earnEnergy(self, earn):
+        self.energy += earn
 
     def loseEnergy(self, energy_consumption):
         self.energy -= energy_consumption
@@ -123,12 +126,20 @@ class Mob:
         return res
 
     def move(self, plateau):
-        choice = self.think(plateau)
-        plateau[self.coord[0]][self.coord[1]] = 0
-        self.coord = choice
-        plateau[self.coord[0]][self.coord[1]] = self
-        self.loseEnergy(self.energy_consumption)
+        if self.energy >= self.energy_consumption:
+            choice = self.think(plateau)
 
+            plateau[self.coord[0]][self.coord[1]] = 0
+            self.coord = choice
+
+            if type(plateau[self.coord[0]][self.coord[1]]) == Food:
+                self.earnEnergy(plateau[self.coord[0]][self.coord[1]].getEnergy())
+
+            plateau[self.coord[0]][self.coord[1]] = self
+            self.loseEnergy(self.energy_consumption)
+        else:
+            plateau[self.coord[0]][self.coord[1]] = 1
+            self.coord = None
 
 class Food:
     def __init__(self, position, energy, id, is_poison=False):
@@ -142,6 +153,10 @@ class Food:
 
     def removeCoord(self):
         self.coord = None
+
+    def getEnergy(self):
+        return self.given_energy
+
 
 if __name__ == '__main__':
     Game()
