@@ -1,20 +1,23 @@
 from Settings import *
 from os import name as os_name
 from os import system as os_system
+from random import choice as random_choice
 from time import sleep
 
 
 class Game:
-    "test"
     def __init__(self):
         self.play = Plateau()
-        for i in range(40):
+        self.play.showMat()
+        sleep(1.5)
+        #while self.play.food_list:
+        for i in range(5):
             for mob in self.play.mob_list:
                 if mob.getCoord() is not None:
-                    mob.move(self.play.plateau)
+                    mob.ThinkedMove(self.play.plateau)
+                self.play.updateFoodList()
                 self.play.showMat()
-            sleep(1.5)
-
+                sleep(1.5)
 
 
 class Plateau:
@@ -24,10 +27,8 @@ class Plateau:
 
         self.food_list = [Food(FPOSITIONS[j], 4, j) for j in range(len(FPOSITIONS))]
         self.mob_list = [Mob(MPOSITION[i], 12, i) for i in range(len(MPOSITION))]
+        self.updateFoodList()
 
-        for food in self.food_list:
-            x, y = food.getCoord()
-            self.plateau[x][y] = food
         for mob in self.mob_list:
             x, y = mob.getCoord()
             self.plateau[x][y] = mob
@@ -35,7 +36,19 @@ class Plateau:
             x, y = elem
             self.plateau[x][y] = 1
 
-    def showMat(self):
+    def updateFoodList(self):
+        to_rem = []
+        for food in self.food_list:
+            if food.getCoord() is not None:
+                x, y = food.getCoord()
+                self.plateau[x][y] = food
+            else:
+                to_rem.append(food)
+
+        for elem in to_rem:
+            self.food_list.remove(elem)
+
+    def showMat(self, c=True):
         s = ""
         for line in self.plateau:
             for elem in line:
@@ -49,15 +62,16 @@ class Plateau:
                     s += ' . '
             s += '\n\n'
 
-        if os_name == 'nt':
-            os_system('cls')
-        elif os_name == 'posix':
-            os_system('clear')
+        if c:
+            if os_name == 'nt':
+                os_system('cls')
+            elif os_name == 'posix':
+                os_system('clear')
         print(s)
 
 
 class Mob:
-    def __init__(self, position, energy, id, speed=1, consumption=1, scope=1):
+    def __init__(self, position, energy, id, speed=1, consumption=1, scope=2):
         self.id = id
 
         self.coord = position
@@ -81,65 +95,79 @@ class Mob:
     def getID(self):
         return self.id
 
-    def think(self, plateau):
+    def possible(self, plateau):
         mat_size = len(plateau)
-        vect_card = [(i, j) for i in range(-1, 2, 1) for j in range(-1, 2, 1)]
-        vect_card.remove((0, 0))
+        x, y = self.coord if self.coord is not None else (-1, -1)
 
-        x, y = self.coord
-        selected_move = None
         possible = []
-        for vect in vect_card:
-            end = False
+
+        vect_list = [(i, j) for i in range(-1, 2, 1) for j in range(-1, 2, 1)]
+
+        for vect in vect_list:
             i, j = vect
-            while not end:
-                new_x = x + i
-                new_y = y + j
+            if 0 <= x+i < mat_size and 0 <= y+j < mat_size:
+                if plateau[x+i][y+j] == 0 or type(plateau[x+i][y+j]) == Food:
+                    possible.append((x+i, y+j))
+        return possible
 
-                # bool condition
-                x_cond = 0 <= new_x < mat_size
-                y_cond = 0 <= new_y < mat_size
-                i_scope_cond = -self.scope <= i <= self.scope
-                j_scope_cond = -self.scope <= j <= self.scope
+    def Think(self, plateau, profondeur):
 
-                if x_cond and i_scope_cond and y_cond and j_scope_cond:
-                    if type(plateau[new_x][new_y]) == Food:
-                        selected_move = (new_x, new_y)
+        possible = self.possible(plateau)
+        old_coord = self.coord
 
-                    if i < 0:
-                        i -= 1
-                    elif i > 0:
-                        i += 1
+        score = 0
+        f = []
+        for elem in possible:
+            x, y = elem
+            if type(plateau[x][y]) == Food:
+                f.append((x, y))
+        score = len(f)
 
-                    if j < 0:
-                        j -= 1
-                    elif j > 0:
-                        j += 1
-                    if plateau[new_x][new_y] == 0:
-                        possible.append((new_x, new_y))
-                else:
-                    end = True
-        if selected_move is None:
-            res = possible[randint(0, len(possible)-1)]
-        else:
-            res = selected_move
-        return res
+        if profondeur == 0:
+            return None, score
 
-    def move(self, plateau):
-        if self.energy >= self.energy_consumption:
-            choice = self.think(plateau)
+        best_score = -1000
+        best_move = []
 
+        finni = False
+        i = 0
+        while not finni and i < len(possible):
+            coord = possible[i]
+            if type(plateau[coord[0]][coord[1]]) != Food:
+                self.Move(coord, plateau, True)
+                score = self.Think(plateau, profondeur-1)[1]
+
+                if best_score < score:
+                    best_score = score
+                    best_move = [(coord, score)]
+                elif score == best_score:
+                    best_move.append((coord, score))
+
+                self.Move(old_coord, plateau, True)
+            else:
+                best_score = score
+                best_move = [(coord, score)]
+                finni = True
+            i+= 1
+        return random_choice(best_move)
+
+    def Move(self, new_coord, plateau, emulated=False):
+        if new_coord != self.coord:
             plateau[self.coord[0]][self.coord[1]] = 0
-            self.coord = choice
+            self.coord = new_coord
 
-            if type(plateau[self.coord[0]][self.coord[1]]) == Food:
+            if type(plateau[self.coord[0]][self.coord[1]]) == Food and not emulated:
+                plateau[self.coord[0]][self.coord[1]].removeCoord()
                 self.earnEnergy(plateau[self.coord[0]][self.coord[1]].getEnergy())
 
             plateau[self.coord[0]][self.coord[1]] = self
             self.loseEnergy(self.energy_consumption)
-        else:
-            plateau[self.coord[0]][self.coord[1]] = 1
-            self.coord = None
+
+    def ThinkedMove(self, plateau):
+        choice = self.Think(plateau, self.scope)[0]
+        print('Mob {} moved from {} to {}'.format(self.id+1, self.coord, choice))
+        self.Move(choice, plateau)
+
 
 class Food:
     def __init__(self, position, energy, id, is_poison=False):

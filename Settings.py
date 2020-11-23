@@ -10,9 +10,9 @@ class Position:
         for elem in read:
             letter = elem[0]
             digit = int(elem[1:])
-            if letter in letters and 1<= digit <= MAT_SIZE:
-                x = letters.index(letter)
-                y = digit-1
+            if letter in letters and 1 <= digit <= MAT_SIZE:
+                x = digit-1
+                y = letters.index(letter)
                 self.list.append((x, y))
 
     @staticmethod
@@ -27,11 +27,12 @@ class Position:
                 if choice == 0 and i == 0 and not finni:  # mob position
                     liste_mob = line.strip().split(',')
                     finni = True
-                elif choice == 1 and i == 1 and not finni:  # obstacle
-                    liste_obstacle = line.strip().split(',')
-                    finni = True
-                elif choice == 2 and i == 2 and not finni:  # food
+                elif choice == 1 and i == 1 and not finni:  # food
                     liste_food = line.strip().split(',')
+                    finni = True
+
+                elif choice == 2 and i == 2 and not finni:  # obstacle
+                    liste_obstacle = line.strip().split(',')
                     finni = True
                 i += 1
 
